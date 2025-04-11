@@ -11,7 +11,7 @@ services:
     environment:
       - INFLUXDB_DB=metrics
       - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=admin123  # Changed to match your script
+      - INFLUXDB_ADMIN_PASSWORD=admin123  
       - INFLUXDB_USER=grafana
       - INFLUXDB_USER_PASSWORD=grafana123
     healthcheck:
