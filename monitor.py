@@ -2,13 +2,13 @@ import time
 import psutil
 import requests
 
-# Use container name instead of localhost
+
 INFLUXDB_URL = 'http://127.0.0.1:8086/write?db=metrics'  # Changed to direct localhost IP
 HOSTNAME = 'localmachine'
-AUTH = ('admin', 'admin123')  # Match the compose file
+AUTH = ('admin', 'admin123')  
 
 def send_metric(measurement, fields):
-    # Proper InfluxDB line protocol format
+  
     fields_str = ",".join([f"{k}={v}" for k, v in fields.items()])
     line = f"{measurement},host={HOSTNAME} {fields_str}"
     
