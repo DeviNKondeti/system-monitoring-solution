@@ -1,21 +1,24 @@
-
+version: '3'
 
 services:
   influxdb:
     image: influxdb:1.8
     container_name: influxdb
     ports:
-      - "8086:8086"
+      - "127.0.0.1:8086:8086"  # Explicitly bind to localhost
     volumes:
       - influxdb-storage:/var/lib/influxdb
     environment:
       - INFLUXDB_DB=metrics
-      - INFLUXDB_ADMIN_ENABLED=true
       - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_ADMIN_PASSWORD=admin
-      - INFLUXDB_HTTP_AUTH_ENABLED=true
-    mem_limit: 1g
-    cpu_shares: 1024
+      - INFLUXDB_ADMIN_PASSWORD=admin123  # Changed to match your script
+      - INFLUXDB_USER=grafana
+      - INFLUXDB_USER_PASSWORD=grafana123
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   grafana:
     image: grafana/grafana
@@ -23,16 +26,19 @@ services:
     ports:
       - "3000:3000"
     environment:
-    - GF_SECURITY_ADMIN_USER=admin
-    - GF_SECURITY_ADMIN_PASSWORD=admin
-    - GF_SMTP_ENABLED=true
-    - GF_SMTP_HOST=smtp.gmail.com:587
-    - GF_SMTP_USER=devinkondeti@gmail.com
-    - GF_SMTP_PASSWORD= ervb oerd wuty ihnc
-    - GF_SMTP_FROM_ADDRESS=devinkondeti@gmail.com
-    - GF_SMTP_FROM_NAME=Grafana Alerts
+        - GF_SMTP_ENABLED=true
+        - GF_SMTP_HOST=smtp.gmail.com:587
+        - GF_SMTP_USER=devinkondeti@gmail.com
+        - GF_SMTP_PASSWORD=ervb oerd wuty ihnc  
+        - GF_SMTP_FROM_ADDRESS=devinkondeti@gmail.com
+        - GF_SMTP_FROM_NAME=Grafana Alerts
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
 
 volumes:
   influxdb-storage:
+  grafana-storage: 

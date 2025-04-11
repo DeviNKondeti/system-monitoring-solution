@@ -2,31 +2,44 @@ import time
 import psutil
 import requests
 
-INFLUXDB_URL = 'http://localhost:8086/write?db=metrics'
-HOSTNAME = 'localmachine'  
+# Use container name instead of localhost
+INFLUXDB_URL = 'http://127.0.0.1:8086/write?db=metrics'  # Changed to direct localhost IP
+HOSTNAME = 'localmachine'
+AUTH = ('admin', 'admin123')  # Match the compose file
 
 def send_metric(measurement, fields):
-    line = f"{measurement},host={HOSTNAME} " + ",".join([f"{k}={v}" for k, v in fields.items()])
+    # Proper InfluxDB line protocol format
+    fields_str = ",".join([f"{k}={v}" for k, v in fields.items()])
+    line = f"{measurement},host={HOSTNAME} {fields_str}"
+    
     try:
-        requests.post(INFLUXDB_URL, data=line, auth=('admin', 'admin123'))
+        response = requests.post(
+            INFLUXDB_URL,
+            data=line,
+            auth=AUTH,
+            headers={'Content-Type': 'application/octet-stream'},
+            timeout=5
+        )
+        response.raise_for_status()
     except Exception as e:
-        print("Error sending data to InfluxDB:", e)
+        print(f"Error sending data to InfluxDB: {e}")
 
-while True:
-    cpu = psutil.cpu_percent()
-    memory = psutil.virtual_memory().percent
-    disk = psutil.disk_usage('/').percent 
-    net = psutil.net_io_counters()
-    net_bytes_sent = net.bytes_sent
-    net_bytes_recv = net.bytes_recv
+if __name__ == "__main__":
+    while True:
+        # Collect metrics
+        cpu = psutil.cpu_percent()
+        memory = psutil.virtual_memory().percent
+        disk = psutil.disk_usage('/').percent
+        net = psutil.net_io_counters()
+        
+        # Send metrics
+        send_metric('system_metrics', {
+            'cpu': float(cpu),
+            'memory': float(memory),
+            'disk': float(disk),
+            'net_sent': int(net.bytes_sent),
+            'net_recv': int(net.bytes_recv)
+        })
 
-    send_metric('system_metrics', {
-        'cpu': cpu,
-        'memory': memory,
-        'disk': disk,
-        'net_sent': net_bytes_sent,
-        'net_recv': net_bytes_recv
-    })
-
-    print(f"Sent metrics - CPU: {cpu}%, Mem: {memory}%, Disk: {disk}%")
-    time.sleep(10)  
+        print(f"Sent metrics - CPU: {cpu}%, Mem: {memory}%, Disk: {disk}%")
+        time.sleep(10)
